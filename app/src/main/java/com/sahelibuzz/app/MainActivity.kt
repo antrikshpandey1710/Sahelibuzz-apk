@@ -6,6 +6,8 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
 
@@ -17,13 +19,32 @@ class MainActivity : AppCompatActivity() {
 
         webView = WebView(this)
 
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.settings.allowFileAccess = true
-        webView.settings.allowContentAccess = true
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            allowFileAccess = true
+            allowContentAccess = true
+            useWideViewPort = true
+            loadWithOverviewMode = true
+        }
 
         webView.webViewClient = WebViewClient()
         webView.webChromeClient = WebChromeClient()
+
+        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, insets ->
+            val systemBars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars()
+            )
+
+            view.setPadding(
+                0,
+                systemBars.top,
+                0,
+                systemBars.bottom
+            )
+
+            insets
+        }
 
         webView.loadUrl("https://saheli-buzz.vercel.app/")
 
