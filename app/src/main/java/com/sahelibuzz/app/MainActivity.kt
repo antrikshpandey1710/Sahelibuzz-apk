@@ -3,28 +3,42 @@ package com.sahelibuzz.app
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
+import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private lateinit var root: FrameLayout
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Splash screen
+        // Edge-to-edge ko manually handle karenge
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        window.statusBarColor = Color.WHITE
+        window.navigationBarColor = Color.BLACK
+
+        root = FrameLayout(this)
+
+        // ---------------- SPLASH SCREEN ----------------
+
         val splash = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = android.view.Gravity.CENTER
+            gravity = Gravity.CENTER
             setBackgroundColor(Color.WHITE)
         }
 
@@ -32,14 +46,14 @@ class MainActivity : AppCompatActivity() {
             text = "SaheliBuzz"
             textSize = 38f
             setTextColor(Color.rgb(210, 20, 110))
-            gravity = android.view.Gravity.CENTER
+            gravity = Gravity.CENTER
         }
 
         val subtitle = TextView(this).apply {
             text = "BY VAIBHAV"
             textSize = 16f
             setTextColor(Color.DKGRAY)
-            gravity = android.view.Gravity.CENTER
+            gravity = Gravity.CENTER
             setPadding(0, 8, 0, 0)
         }
 
@@ -59,45 +73,77 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
-        setContentView(splash)
+        root.addView(
+            splash,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
 
-        // Website WebView
-        webView = WebView(this)
+        // ---------------- WEBVIEW ----------------
 
-        webView.settings.apply {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            allowFileAccess = true
-            allowContentAccess = true
-            useWideViewPort = true
-            loadWithOverviewMode = true
+        webView = WebView(this).apply {
+
+            settings.apply {
+                javaScriptEnabled = true
+                domStorageEnabled = true
+                allowFileAccess = true
+                allowContentAccess = true
+                useWideViewPort = true
+                loadWithOverviewMode = true
+            }
+
+            webViewClient = WebViewClient()
+            webChromeClient = WebChromeClient()
+
+            // Initially hidden behind splash
+            visibility = View.INVISIBLE
         }
 
-        webView.webViewClient = WebViewClient()
-        webView.webChromeClient = WebChromeClient()
+        val webParams = FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
 
-        // Keep website away from Android status/navigation bars
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, insets ->
+        root.addView(webView, webParams)
+
+        setContentView(root)
+
+        // ---------------- SYSTEM BAR FIX ----------------
+
+        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+
             val bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars()
             )
 
-            view.setPadding(
-                0,
-                bars.top,
-                0,
-                bars.bottom
-            )
+            val params = webView.layoutParams as FrameLayout.LayoutParams
+
+            // WebView ko status bar aur navigation bar ke bahar rakho
+            params.topMargin = bars.top
+            params.bottomMargin = bars.bottom
+
+            params.leftMargin = 0
+            params.rightMargin = 0
+
+            webView.layoutParams = params
 
             insets
         }
 
-        // Show splash briefly, then open website
+        ViewCompat.requestApplyInsets(root)
+
+        // ---------------- OPEN WEBSITE ----------------
+
         android.os.Handler(mainLooper).postDelayed({
 
-            setContentView(webView)
+            splash.visibility = View.GONE
+            webView.visibility = View.VISIBLE
 
             webView.loadUrl("https://saheli-buzz.vercel.app/")
+
+            ViewCompat.requestApplyInsets(root)
 
         }, 1500)
     }
